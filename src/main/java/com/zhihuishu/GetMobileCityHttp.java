@@ -2,23 +2,21 @@ package com.zhihuishu;
 
 import com.alibaba.fastjson.JSONObject;
 import com.zhihuishu.dto.MobileRegisterInfoDto;
-import com.zhihuishu.util.OkHttpClientFactory;
+import com.zhihuishu.util.HttpClientUtil;
 import com.zhihuishu.util.StringHelper;
 import jodd.util.StringUtil;
-import okhttp3.FormBody;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.ql.exec.UDF;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author ：SunX
  * @date ：2020/9/10 13:53
- * @description：获取手机号码归属地
+ * @description：获取手机号码归属地httpClient方式调用
  */
-public final class GetMobileCity extends UDF {
+public final class GetMobileCityHttp extends UDF {
     private static final String APP_ID = "";
     private static final String APP_KEY = "";
 
@@ -26,27 +24,15 @@ public final class GetMobileCity extends UDF {
         if (StringUtil.isEmpty(mobile)) {
             return "";
         }
-        // 构建请求
-        Request request = new Request.Builder()
-                .url("https://api.253.com/open/unn/teladress")
-                .post(new FormBody.Builder()
-                        .add("appId", APP_ID)
-                        .add("appKey", APP_KEY)
-                        .add("mobile", mobile)
-                        .add("orderNo", StringHelper.uuid())
-                        .build())
-                .build();
-
-        // 发送请求
-        Response response = null;
-        try {
-            response = OkHttpClientFactory.getInstance().newCall(request).execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String url = "https://api.253.com/open/unn/teladress";
+        Map<String, String> param = new HashMap<>();
+        param.put("appId", APP_ID);
+        param.put("appKey", APP_KEY);
+        param.put("mobile", mobile);
+        param.put("orderNo", StringHelper.uuid());
         // 获取手机号归属地
         try {
-            final String rs = response.body().string();
+            final String rs = HttpClientUtil.post(url, param);
             if (!StringUtils.isEmpty(rs)) {
                 final JSONObject jsonObject = JSONObject.parseObject(rs);
                 if (jsonObject != null && !StringUtils.isEmpty(jsonObject.getString("data"))) {
@@ -56,9 +42,10 @@ public final class GetMobileCity extends UDF {
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
         return "";
     }
 
