@@ -1,4 +1,5 @@
 package com.zhihuishu.util;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -43,15 +44,12 @@ public class AI_QA_UTIL {
 	private static boolean is(char a){
 		return  a=='的' || a == '吗' || a=='啊' || a=='和' || a == '及' || a=='等'  || a=='吧';
 	}
-	public static class FloatNumber {
+	private static class FloatNumber {
 		public float value=0;
-		public String str;
-		
+		public String str="";
 		public String str1="";
 		public String target1="";
-		public FloatNumber(String s){
-			this.str = s;
-		}
+		public boolean end=true;
 	}
 	
 	/**
@@ -64,26 +62,30 @@ public class AI_QA_UTIL {
 	public static float similarity(String str,String target,double bfb){
 		if(str==null  ){return 0;}
 		FloatNumber s = overlap(str);
-		if(s!=null && s.value<bfb && target!=null){
+		if(s!=null && s.value<bfb && target!=null && s.end){
 			s =distance(s,str(target));
-			if(s.value<bfb){
+			if(s.value<bfb && s.end){
 				s = cosine(s);
 			}
 		}
 		return s==null?0:s.value;
 	}
-	
+	/**
+	 * 相似度
+	 * @param str 当前字符串
+	 * @param target 和对比字符串
+	 * @return
+	 */
 	public static float similarity(String str,String target){
 		if(str==null  ){return 0;}
 		FloatNumber s = overlap(str);
-		if(s!=null && s.value<100 && target!=null){
+		if(s!=null && s.value<99 && target!=null && s.end){
 			s =distance(s,str(target));
-			if(s.value<100){
+			if(s.value<99 && s.end){
 				s = cosine(s);
 			}
 		}
 		return s==null?0:s.value;
-		//return s;
 	}
 	
 	
@@ -102,7 +104,7 @@ public class AI_QA_UTIL {
 	 * @return
 	 */
 	private static FloatNumber overlap(String str){
-		FloatNumber f= new FloatNumber("");
+		FloatNumber f= new FloatNumber();
 		if(str!=null  ){
 			int strLen = str.length(),len=0;
 			Set<Character> str2 = new HashSet<Character>();
@@ -122,7 +124,7 @@ public class AI_QA_UTIL {
 			int i = str2.size();/*去重后长度*/
 			/*如果总长度小于4 并去重后长度小于3 直接相似度100*/
 			if(len<4 || (i<4 && (g<5||e2<5))){
-				f.value=100;
+				f.value=100;f.end=false;
 			}else{
 				float e5  = ((float) g/(len)) *100f ;/*字母占总长度百分比*/
 				float e3=((float) e2/len)*100f;/*数字占总长度百分比*/
@@ -148,9 +150,10 @@ public class AI_QA_UTIL {
 	 * @return 
 	 */
 	private static FloatNumber distance(FloatNumber obj,String target){
+		try {
 		int n = obj.str.length();
 		int m = target.length();
-		if (n == 0 || m == 0) {  return obj;}
+		if (n == 0 || m == 0) { obj.end=false; return obj;}
 		int d[][] = new int[n + 1][m + 1]; // 矩阵
 		int i,j,temp,fn=0,fm=0; 
 		char ch1,ch2,upch1=0,upch2=0; 
@@ -176,6 +179,9 @@ public class AI_QA_UTIL {
 		}
 		float f = (1 - (float) d[n-fn][m-fm] / Math.max(n-fn, m-fm)) * 100F;
 		obj.value = f>obj.value?f:obj.value;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return obj;
 	}
 	/**
@@ -184,6 +190,7 @@ public class AI_QA_UTIL {
 	 * @return
 	 */
 	private static FloatNumber cosine(FloatNumber obj){
+		try {
 		List<String> wrod1 = segmenter.sentenceProcess(obj.str1);
 		List<String> wrod2 = segmenter.sentenceProcess(obj.target1);
 		Set<String> word = new HashSet<String>();
@@ -207,6 +214,9 @@ public class AI_QA_UTIL {
 		}
 		float f = (float) (ab/(Math.sqrt(a)*Math.sqrt(b))*100);
 		obj.value =  f > obj.value ? f : obj.value;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return obj;
 	}
 }
